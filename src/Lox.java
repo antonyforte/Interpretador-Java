@@ -41,7 +41,7 @@ public class Lox {
     }
 
     private static void run(String source) { //FUNCAO QUE SCANEIA A STRING E A SEPARA EM TOKENS
-        Scanner1 scanner = new Scanner1(source); // NOVO SCANNER
+        ScannerI scanner = new ScannerI(source); // NOVO SCANNER
         List<Token> tokens = scanner.scanTokens(); //SCANEIA UMA LISTA DE TOKENS
 
         for (Token token : tokens) {
