@@ -1,3 +1,5 @@
+package edu.ufsj.lox;
+
 public class Token {
     TokenType type;
     String lexeme;
