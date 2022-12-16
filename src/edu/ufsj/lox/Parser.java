@@ -5,6 +5,8 @@ import java.util.List;
 import static edu.ufsj.lox.TokenType.*;
 
 public class Parser {
+    private static class ParseError extends RuntimeException{}
+
     private final List<Token> tokens;
     private int current = 0;
 
@@ -12,10 +14,29 @@ public class Parser {
         this.tokens = tokens;
     }
 
-    private Expr expression(){
-        return equality();
+    public Expr parse(){
+        try{
+            return expression();
+        }catch (ParseError e){
+            return null;
+        }
     }
 
+    private Expr expression(){
+        return ternary();
+    }
+
+    private Expr ternary(){
+        Expr expr = equality();
+
+        if(match(INTERROGATION)) {
+            Expr exprtrue = expression();
+            consume(COLON,"Missing ':' ");
+            Expr exprfalse = expression();
+            expr = new Expr.Ternary(expr,exprtrue,exprfalse);
+        }
+        return expr;
+    }
     private Expr equality(){
         Expr expr = comparison();
 
@@ -64,6 +85,7 @@ public class Parser {
         return tokens.get(current - 1);
     }
 
+
     private Expr comparison(){
         Expr expr = term();
 
@@ -106,6 +128,7 @@ public class Parser {
         return primary();
     }
 
+
     private Expr primary() {
         if (match(FALSE)) return new Expr.Literal(false);
         if (match(TRUE)) return new Expr.Literal(true);
@@ -120,11 +143,43 @@ public class Parser {
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
-        return null;
+        throw error(peek(), "Expect expression.");
     }
 
-    private void consume(TokenType t, String msg){
+    private Token consume(TokenType type, String message){
 
+        if (check(type)){
+            return advance();
+        }else{
+            throw error(peek(),message);
+        }
+
+    }
+
+    private ParseError error(Token token, String message){
+        Lox.error(token,message);
+        return new ParseError();
+    }
+
+    private void synchronize(){
+        advance();
+        while(!isAtEnd()){
+            if (previous().type == SEMICOLON){
+                return;
+            }else{
+                switch (peek().type){
+                    case CLASS:
+                    case FUN:
+                    case FOR:
+                    case IF:
+                    case WHILE:
+                    case PRINT:
+                    case RETURN:
+                        return;
+                }
+                advance();
+            }
+        }
     }
 }
 

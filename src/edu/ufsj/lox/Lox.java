@@ -9,7 +9,9 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class Lox {
+    private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
+    static boolean hadRuntimeError = false;
     public static void main(String args[]) throws IOException { //LE OS ARGUMENTOS NA ENTRADA
         if (args.length > 1 ) { // SE TIVER MAIS DE UM ARGUMENTO PRINTA UM ERRO
             System.err.println("Usage: jlox [script]");
@@ -26,6 +28,7 @@ public class Lox {
         run(new String(bytes,Charset.defaultCharset()));  // RODA ESSE SCRIPT
 
         if (hadError) System.exit(101); // TESTAR SE TEVE ALGUM ERRO
+        if (hadRuntimeError) System.exit(70);
     }
 
     private static void runPrompt () throws IOException { //FUNCAO QUE ENTRA EM MODO TERMINAL DO INTERPRETADOR
@@ -45,9 +48,15 @@ public class Lox {
         ScannerI scanner = new ScannerI(source); // NOVO SCANNER
         List<Token> tokens = scanner.scanTokens(); //SCANEIA UMA LISTA DE TOKENS
 
-        for (Token token : tokens) {
-            System.out.println(token);
-        }
+        Parser parser = new Parser(tokens);
+        Expr expression = parser.parse();
+
+        //Em caso de erro, por enquanto, encerramos a execucao
+
+        if (hadError) return;
+
+        //System.out.println(new AstPrinter().print(expression));
+        interpreter.interpret(expression);
     }
 
     static void error(int line, String message){
@@ -56,5 +65,18 @@ public class Lox {
     private static void report(int line, String where, String message){
         System.err.println("[line " + line + "] Error " + where + " : " + message);
         hadError = true;
+    }
+
+    static void runtimeError(RuntimeError error){
+        System.err.println(error.getMessage() + "\n[Line "+ error.token.line + "]");
+        hadRuntimeError = true;
+    }
+
+    static void error(Token token,String message){
+        if(token.type == TokenType.EOF){
+            report(token.line, "at end", message);
+        }else{
+            report(token.line, "at '" ,token.lexeme + "'" + message );
+        }
     }
 }
